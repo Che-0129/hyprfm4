@@ -16,7 +16,7 @@
 
         buildPhase = ''
           runHook preBuild
-          $CXX -shared -fPIC --no-gnu-unique main.cpp -o hyprfm4.so -std=c++26 \
+          $CXX -shared -fPIC --no-gnu-unique -O2 main.cpp -o hyprfm4.so -std=c++26 \
             $(pkg-config --cflags pixman-1 libdrm hyprland)
           runHook postBuild
         '';

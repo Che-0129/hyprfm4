@@ -1,12 +1,13 @@
 #define WLR_USE_UNSTABLE
 
-#include <hyprland/src/plugins/PluginAPI.hpp>
-#include <hyprland/src/managers/input/InputManager.hpp>
 #include <hyprland/src/desktop/state/FocusState.hpp>
 #include <hyprland/src/desktop/state/ViewState.hpp>
 #include <hyprland/src/desktop/view/Window.hpp>
 #include <hyprland/src/event/EventBus.hpp>
+#include <hyprland/src/managers/input/InputManager.hpp>
+#include <hyprland/src/managers/SeatManager.hpp>
 #include <hyprland/src/output/Monitor.hpp>
+#include <hyprland/src/plugins/PluginAPI.hpp>
 #include <linux/input-event-codes.h>
 
 inline HANDLE PHANDLE = nullptr;
@@ -34,6 +35,11 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
                 return;
             }
 
+            g_swallowRelease = false;
+
+            if (g_pInputManager->getModsFromAllKBs() != 0)
+                return;
+
             const auto pos = g_pInputManager->getMouseCoordsInternal();
             const auto win = Desktop::viewState()->hitTest().windowAt(pos, Desktop::View::ALLOW_FLOATING);
 
@@ -52,6 +58,10 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
                                   wb.x + wb.w > mb.x + mb.w + TOL || wb.y + wb.h > mb.y + mb.h + TOL;
 
             if (!overflow)
+                return;
+
+            const auto focusSurf = g_pSeatManager->m_state.pointerFocus.lock();
+            if (!focusSurf || focusSurf != win->wlSurface()->resource())
                 return;
 
             Desktop::focusState()->fullWindowFocus(win, Desktop::FOCUS_REASON_CLICK);
